@@ -27,13 +27,14 @@ checkSudokuOver :: Sudoku -> Bool
 checkSudokuOver (Sudoku a) = and [and [(if value == Nothing then False else True) | (value, position) <- row ] | row <- a]
 
 -- checkMove :: Sudoku -> Int -> Int -> Int -> Bool
--- checkMove (Sudoku a) row col number = 
+-- checkMove board row col number = ((checkOccupied board row col) == False) && () && 
 
-checkOccupied :: Sudoku :: Int -> Int -> Bool
-checkOccupied (Sudoku a) row column = if (a !! row !! column == Nothing) then True else False
+checkOccupied :: Sudoku -> Int -> Int -> Bool
+checkOccupied (Sudoku a) row column = if (fst (a !! row !! column) == Nothing) then False else True
 
-checkRow :: [(Maybe Int, Int)] -> Int -> Bool
-checkRow row number = and [if (Just number) == value then False else True | (value, position) <- row]
+checkRow :: Sudoku -> Int -> Int -> Bool
+checkRow (Sudoku a) rowno number = and [if (Just number) == value then False else True | (value, position) <- row]
+                                    where row = a !! rowno
 
 checkColumn :: [(Maybe Int, Int)] -> Int -> Bool
 checkColumn column number = and [if (Just number) == value then False else True | (value, position) <- column]
@@ -41,6 +42,31 @@ checkColumn column number = and [if (Just number) == value then False else True 
 checkJigsawPiece :: Sudoku -> Int -> Int -> Int -> Bool
 checkJigsawPiece (Sudoku a) row column number = and [and [if (Just number) == value then False else True | (value, position)<- row, position == piece] | row <- a]
     where piece = snd (a !! row !! column)
+
+printTopLine :: [(Maybe Int, Int)] -> Int -> IO ()
+printTopLine (x:[]) _ = putStr "---."
+printTopLine (x:y:xs) a = do 
+                            if a == -1 then
+                                do putStr "."
+                                   printTopLine (x:y:xs) 1
+                            else
+                                if (snd x) == (snd y) then
+                                    do putStr "----"   
+                                       printTopLine (y:xs) 1
+                                else
+                                    do putStr "---."
+                                       printTopLine (y:xs) 1
+
+-- printSudoku :: Sudoku -> IO ()
+-- printSudoku (Sudoku a) = do
+--                            putStrLn []
+
+
+-- game :: IO ()
+-- game = do
+--         fileContents <- readFile "map.txt"
+--         let dat = lines fileContents
+        
 
 
 
