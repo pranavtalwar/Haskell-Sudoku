@@ -43,29 +43,105 @@ checkJigsawPiece :: Sudoku -> Int -> Int -> Int -> Bool
 checkJigsawPiece (Sudoku a) row column number = and [and [if (Just number) == value then False else True | (value, position)<- row, position == piece] | row <- a]
     where piece = snd (a !! row !! column)
 
-printTopLine :: [(Maybe Int, Int)] -> Int -> IO ()
-printTopLine (x:[]) _ = putStr "---."
-printTopLine (x:y:xs) a = do 
-                            if a == -1 then
-                                do putStr "."
-                                   printTopLine (x:y:xs) 1
+printMiddleLineHelper :: (Maybe Int, Int) -> (Maybe Int, Int) -> (Maybe Int, Int) -> (Maybe Int, Int) -> IO ()
+printMiddleLineHelper (_,a) (_,b) (_,c) (_,d)  
+    | (a == b && a == c && a == d) = putStr ("    ")
+    | (a == c && c == d && a /= b) = putStr ("   '")
+    | (a /= c && c == d && a /= b) = putStr ("---'")
+    | (a == b && c == d && a /= c) = putStr ("----")
+    | (a == b && b == d && a /= c) = putStr ("---.")
+    | (a == c && b == d && a /= b) = putStr ("   |") 
+    | (b == c && c == d && a /= b) = putStr ("---'")
+    | (a == b && b == c && a /= d) = putStr ("   .")
+    | (a == b && c /= d && a /= d) = putStr ("---.")
+    | (a /= b && c /= d && b == d) = putStr ("---:")
+    | (a /= b && c /= d && a == c) = putStr ("   :")
+
+
+printTopAndBottomLine :: [(Maybe Int, Int)] -> String -> Int -> IO ()
+printTopAndBottomLine (x:[])   c _ = putStr ("---" ++ c)
+printTopAndBottomLine (x:y:xs) c a =  do 
+                                        if a == -1 then
+                                            do putStr c
+                                               printTopAndBottomLine (x:y:xs) c 1
+                                        else
+                                            if (snd x) == (snd y) then
+                                                do putStr "----"   
+                                                   printTopAndBottomLine (y:xs) c 1
+                                            else
+                                                do putStr ("---" ++ c)
+                                                   printTopAndBottomLine (y:xs) c 1
+
+printLine :: [(Maybe Int, Int)] -> Int -> IO ()
+printLine ((Just a, b):[]) _ = putStr (" " ++ [(intToDigit a)]  ++ " |")
+printLine ((Nothing, b):[]) _ = putStr (" ." ++ " |")
+printLine (x:y:xs) a = do 
+                         if a == -1 then
+                            do putStr "|"
+                               printLine (x:y:xs) 1
+                         else
+                            if (snd x) == (snd y) then
+                                if (fst x) == Nothing then
+                                    do putStr (" ." ++ "  ")
+                                       printLine (y:xs) 1
+                                else 
+                                    do putStr (" " ++ [(intToDigit $ fromJust $ fst x)] ++ "  ")
+                                       printLine (y:xs) 1
                             else
-                                if (snd x) == (snd y) then
-                                    do putStr "----"   
-                                       printTopLine (y:xs) 1
+                                if (fst x) == Nothing then
+                                    do putStr (" ." ++ " |")
+                                       printLine (y:xs) 1
                                 else
-                                    do putStr "---."
-                                       printTopLine (y:xs) 1
+                                    do putStr (" " ++ [(intToDigit $ fromJust $ fst x)] ++ " |")
+                                       printLine (y:xs) 1
 
--- printSudoku :: Sudoku -> IO ()
--- printSudoku (Sudoku a) = do
---                            putStrLn []
+printMiddleLine :: [(Maybe Int, Int)] -> [(Maybe Int, Int)] -> Int -> IO ()
+printMiddleLine (a:[]) (c:[]) _ = if (snd a) == (snd c) then putStr "   |" else putStr "---:"
+printMiddleLine (a:b:xs) (c:d:ys) e =  do
+                                         if e == -1 then
+                                            if (snd a == snd c) then
+                                                do putStr "|"
+                                                   printMiddleLine (a:b:xs) (c:d:ys) 1
+                                            else
+                                                do putStr ":"
+                                                   printMiddleLine (a:b:xs) (c:d:ys) 1
+                                         else
+                                             do printMiddleLineHelper a b c d   
+                                                printMiddleLine (b:xs) (d:ys) e
+
+changeLine :: IO ()
+changeLine = putStr "\n"
+
+printSudoku :: Sudoku -> Int -> IO ()
+printSudoku (Sudoku (x:[])) _ = do
+                                  printLine (x) (-1)
+                                  changeLine
+                                  printTopAndBottomLine (x) ("'") (-1)
+                                  changeLine
+printSudoku (Sudoku (x:y:xs)) e = do
+                                    if e == -1 then
+                                        do printTopAndBottomLine (x) (".") (-1)
+                                           changeLine
+                                           printLine (x) (-1)
+                                           changeLine
+                                           printMiddleLine (x) (y) (-1)
+                                           changeLine
+                                           printSudoku (Sudoku (y:xs)) (1)
+                                    else
+                                        do printLine (x) (-1)
+                                           changeLine
+                                           printMiddleLine (x) (y) (-1)
+                                           changeLine
+                                           printSudoku (Sudoku (y:xs)) (1)
 
 
--- game :: IO ()
--- game = do
---         fileContents <- readFile "map.txt"
---         let dat = lines fileContents
+                           
+
+
+-- -- game :: IO ()
+-- -- game = do
+-- --         fileContents <- readFile "map.txt"
+-- --         let dat = lines fileContents
         
 
 
