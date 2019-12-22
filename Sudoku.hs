@@ -1,5 +1,6 @@
 import Data.Maybe
 import Data.Char
+import System.Directory
 
 data Sudoku = Sudoku [[(Maybe Int, Int)]] deriving (Show)
 
@@ -135,13 +136,37 @@ printSudoku (Sudoku (x:y:xs)) e = do
                                            printSudoku (Sudoku (y:xs)) (1)
 
 
-                           
+getFile :: IO String
+getFile = do putStr "Enter the file name: "
+             fileName <- getLine
+             fileChecker <- doesFileExist fileName
+             if (fileChecker == True) then
+                do fileContents <- readFile fileName
+                   return fileContents
+             else 
+                do putStrLn "Invalid input! The file does not exist in this directory"
+                   getFile
 
+game :: IO ()
+game = do
+         putStrLn "Welcome to Sudoku!"
+         putStrLn "Select one of the following options:"
+         putStrLn "1. Load a board from file"
+         putStrLn "2. Save a board to file"
+         putStrLn "3. Quit the game"
+         putStrLn "4. Make a move"
+         putStr "Enter your choice: "
+         option <- getChar
+         changeLine
+         if (option == '1') then
+            do fileContents <- getFile
+               let dat = lines fileContents
+               let board = constructSudoku (getSudokuPositions dat) (getSudokuValues dat)
+               printSudoku board (-1)
+         else
+            -- if (option == '2') then
 
--- -- game :: IO ()
--- -- game = do
--- --         fileContents <- readFile "map.txt"
--- --         let dat = lines fileContents
+            putStr "choku"
         
 
 
