@@ -20,6 +20,9 @@ allBlankSudoku :: Sudoku
 allBlankSudoku = Sudoku empty
                 where empty = [[(Nothing, -1) | num2 <- [1..9]] | num <- [1..9]]
 
+checkBlankSudoku :: Sudoku -> Bool
+checkBlankSudoku (Sudoku a) = and [and [if (value == Nothing) then True else False | (value, position) <- row] | row <- a]
+
 constructSudoku :: [String] -> [String] -> Sudoku
 constructSudoku positions values = Sudoku [[(if (values !! rowNo !! colNo == '.') then Nothing else Just (digitToInt (values !! rowNo !! colNo)), (digitToInt char)) | (char, colNo) <- zip row [0..length row - 1]] | (row, rowNo) <- zip positions [0..length positions - 1]]
 
@@ -147,26 +150,37 @@ getFile = do putStr "Enter the file name: "
                 do putStrLn "Invalid input! The file does not exist in this directory"
                    getFile
 
-game :: IO ()
-game = do
-         putStrLn "Welcome to Sudoku!"
-         putStrLn "Select one of the following options:"
-         putStrLn "1. Load a board from file"
-         putStrLn "2. Save a board to file"
-         putStrLn "3. Quit the game"
-         putStrLn "4. Make a move"
-         putStr "Enter your choice: "
-         option <- getChar
-         changeLine
-         if (option == '1') then
-            do fileContents <- getFile
-               let dat = lines fileContents
-               let board = constructSudoku (getSudokuPositions dat) (getSudokuValues dat)
-               printSudoku board (-1)
-         else
-            -- if (option == '2') then
+constructFile :: Sudoku -> String
+constructFile (Sudoku a) = unlines (positions ++ values)
+                where positions = [[intToDigit position | (value, position) <- row] | row <- a]
+                      values = [[if (value == Nothing) then '.' else (intToDigit $ fromJust value)| (value, position) <- row] | row <- a]
 
-            putStr "choku"
+game :: Sudoku -> IO ()
+game (Sudoku a)= do
+                   putStrLn "Select one of the following options:"
+                   putStrLn "1. Load a board from file"
+                   putStrLn "2. Save a board to file"
+                   putStrLn "3. Quit the game"
+                   putStrLn "4. Make a move"
+                   putStr "Enter your choice: "
+                   option <- getChar
+                   changeLine
+                   if (option == '1') then
+                       do fileContents <- getFile
+                          let dat = lines fileContents
+                          let board = constructSudoku (getSudokuPositions dat) (getSudokuValues dat)
+                          putStrLn "Read board successfully!"
+                          putStrLn "Initial board:"
+                          printSudoku board (-1)
+                          game board
+                   else if (option == '2') then
+                        do 
+                           return ()
+                   else if (option == '3') then 
+                        do 
+                          return ()
+                   else
+                        do putStr "Chaman"
         
 
 
