@@ -30,7 +30,7 @@ checkSudokuOver :: Sudoku -> Bool
 checkSudokuOver (Sudoku a) = and [and [(if value == Nothing then False else True) | (value, position) <- row ] | row <- a]
 
 checkMove :: Sudoku -> Int -> Int -> Int -> Bool
-checkMove board row col number = ((checkOccupied board row col) == False) && (checkRow board row number) && (checkColumn board col number)
+checkMove board row col number = ((checkOccupied board row col) == False) && (checkRow board row number) && (checkColumn board col number) && (checkJigsawPiece board row col number)
 
 checkOccupied :: Sudoku -> Int -> Int -> Bool
 checkOccupied (Sudoku a) row column = if (fst (a !! row !! column) == Nothing) then False else True
@@ -45,6 +45,10 @@ checkColumn (Sudoku a) colno number = and [if ((Just number) == (fst $ (!!) row 
 checkJigsawPiece :: Sudoku -> Int -> Int -> Int -> Bool
 checkJigsawPiece (Sudoku a) row column number = and [and [if (Just number) == value then False else True | (value, position)<- row, position == piece] | row <- a]
     where piece = snd (a !! row !! column)
+   
+makeMove :: Sudoku -> Int -> Int -> Int -> Sudoku
+makeMove (Sudoku a) rowno colno number = Sudoku b
+                  where b = [if (rowno == irow) then ([if (colno == icol) then ((Just number), position) else (value, position) | ((value, position), icol) <- zip row [0..8]]) else row | (row, irow) <- zip a [0..8]]
 
 printMiddleLineHelper :: (Maybe Int, Int) -> (Maybe Int, Int) -> (Maybe Int, Int) -> (Maybe Int, Int) -> IO ()
 printMiddleLineHelper (_,a) (_,b) (_,c) (_,d)  
@@ -217,8 +221,17 @@ game (Sudoku a)= do
                            row <- getRowCol "Row:"
                            col <- getRowCol "Column:"
                            number <- getDigit "Number:"
-                           putStr "chaman"
-                           -- if board row col num
+                           if (checkMove (Sudoku a) row col number) then 
+                              do 
+                                 let board = makeMove (Sudoku a) row col number 
+                                 putStrLn "New board:"
+                                 printSudoku board (-1)
+                                 game board
+                           else
+                              do putStrLn "Sorry, there is a conflict existing in your board."
+                                 putStrLn "Your current board:"
+                                 printSudoku (Sudoku a) (-1)
+                                 game (Sudoku a)
                    else
                         do putStrLn "Please enter a valid option!"
                            game (Sudoku a)
