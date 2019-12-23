@@ -26,12 +26,11 @@ checkBlankSudoku (Sudoku a) = and [and [if (value == Nothing) then True else Fal
 constructSudoku :: [String] -> [String] -> Sudoku
 constructSudoku positions values = Sudoku [[(if (values !! rowNo !! colNo == '.') then Nothing else Just (digitToInt (values !! rowNo !! colNo)), (digitToInt char)) | (char, colNo) <- zip row [0..length row - 1]] | (row, rowNo) <- zip positions [0..length positions - 1]]
 
-
 checkSudokuOver :: Sudoku -> Bool
 checkSudokuOver (Sudoku a) = and [and [(if value == Nothing then False else True) | (value, position) <- row ] | row <- a]
 
--- checkMove :: Sudoku -> Int -> Int -> Int -> Bool
--- checkMove board row col number = ((checkOccupied board row col) == False) && () && 
+checkMove :: Sudoku -> Int -> Int -> Int -> Bool
+checkMove board row col number = ((checkOccupied board row col) == False) && (checkRow board row number) && (checkColumn board col number)
 
 checkOccupied :: Sudoku -> Int -> Int -> Bool
 checkOccupied (Sudoku a) row column = if (fst (a !! row !! column) == Nothing) then False else True
@@ -40,8 +39,8 @@ checkRow :: Sudoku -> Int -> Int -> Bool
 checkRow (Sudoku a) rowno number = and [if (Just number) == value then False else True | (value, position) <- row]
                                     where row = a !! rowno
 
-checkColumn :: [(Maybe Int, Int)] -> Int -> Bool
-checkColumn column number = and [if (Just number) == value then False else True | (value, position) <- column]
+checkColumn :: Sudoku -> Int -> Int -> Bool
+checkColumn (Sudoku a) colno number = and [if ((Just number) == (fst $ (!!) row colno)) then False else True | row <- a]
 
 checkJigsawPiece :: Sudoku -> Int -> Int -> Int -> Bool
 checkJigsawPiece (Sudoku a) row column number = and [and [if (Just number) == value then False else True | (value, position)<- row, position == piece] | row <- a]
@@ -150,6 +149,38 @@ getFile = do putStr "Enter the file name: "
                 do putStrLn "Invalid input! The file does not exist in this directory"
                    getFile
 
+getRowCol :: String -> IO Int
+getRowCol message = do putStrLn message
+                       x <- getChar
+                       changeLine
+                       if isDigit x then
+                           do
+                              let digit = digitToInt x
+                              if (digit >= 0) && (digit < 9) then
+                                 do return digit
+                              else 
+                                 do putStrLn "Please enter a digit in the range of 0 to 8"
+                                    getRowCol message
+                       else
+                           do putStrLn "Please enter a digit!"
+                              getRowCol message
+
+getDigit :: String -> IO Int
+getDigit message = do putStrLn message
+                      x <- getChar
+                      changeLine
+                      if isDigit x then
+                        do 
+                           let digit = digitToInt x
+                           if (digit > 0) && (digit <= 9) then
+                              do return (digitToInt x)
+                           else 
+                              do putStrLn "Please enter a digit in the range of 1 to 9"
+                                 getDigit message
+                      else 
+                        do putStrLn "Invalid input"
+                           getDigit message
+
 constructFile :: Sudoku -> String
 constructFile (Sudoku a) = unlines (positions ++ values)
                 where positions = [[intToDigit position | (value, position) <- row] | row <- a]
@@ -174,13 +205,24 @@ game (Sudoku a)= do
                           printSudoku board (-1)
                           game board
                    else if (option == '2') then
-                        do 
-                           return ()
+                        do putStr "Enter file to save to: "
+                           fileName <- getLine
+                           writeFile fileName (constructFile (Sudoku a))
+                           game (Sudoku a)
                    else if (option == '3') then 
                         do 
                           return ()
+                   else if (option == '4') then
+                        do putStrLn "Next move:"
+                           row <- getRowCol "Row:"
+                           col <- getRowCol "Column:"
+                           number <- getDigit "Number:"
+                           putStr "chaman"
+                           -- if board row col num
                    else
-                        do putStr "Chaman"
+                        do putStrLn "Please enter a valid option!"
+                           game (Sudoku a)
+
         
 
 
