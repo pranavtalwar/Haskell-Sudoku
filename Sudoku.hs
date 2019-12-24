@@ -1,6 +1,7 @@
 import Data.Maybe
 import Data.Char
 import System.Directory
+import System.IO
 
 data Sudoku = Sudoku [[(Maybe Int, Int)]] deriving (Show)
 
@@ -149,6 +150,7 @@ printSudoku (Sudoku (x:y:xs)) e = do
 
 getFile :: IO String
 getFile = do putStr "Enter the file name: "
+             hFlush stdout
              fileName <- getLine
              fileChecker <- doesFileExist fileName
              if (fileChecker == True) then
@@ -197,6 +199,7 @@ constructFile (Sudoku a) = reverse $ drop 1 $ reverse $ unlines (positions ++ va
 
 game :: Sudoku -> [(Int, Int, Int)] -> [(Int, Int, Int)] -> IO ()
 game (Sudoku a) moves undoneMoves = do
+                                       hSetBuffering stdin NoBuffering
                                        putStrLn "Select one of the following options:"
                                        putStrLn "1. Load a board from file"
                                        putStrLn "2. Save a board to file"
@@ -205,6 +208,7 @@ game (Sudoku a) moves undoneMoves = do
                                        putStrLn "5. Undo a move"
                                        putStrLn "6. Redo a move"
                                        putStr "Enter your choice: "
+                                       hFlush stdout
                                        option <- getChar
                                        changeLine
                                        if (option == '1') then
