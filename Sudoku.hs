@@ -202,6 +202,8 @@ game (Sudoku a) moves undoneMoves = do
                                        putStrLn "2. Save a board to file"
                                        putStrLn "3. Quit the game"
                                        putStrLn "4. Make a move"
+                                       putStrLn "5. Undo a move"
+                                       putStrLn "6. Redo a move"
                                        putStr "Enter your choice: "
                                        option <- getChar
                                        changeLine
@@ -214,54 +216,87 @@ game (Sudoku a) moves undoneMoves = do
                                              printSudoku board (-1)
                                              game board moves undoneMoves
                                        else if (option == '2') then
-                                             if checkBlankSudoku (Sudoku a) then
-                                                do putStrLn "The board is empty hence you cannot save it!"
-                                                   putStrLn "You must load a board from file first."
-                                                   game (Sudoku a) moves undoneMoves
-                                             else
-                                                do putStr "Enter file to save to: "
-                                                   fileName <- getLine
-                                                   writeFile fileName (constructFile (Sudoku a))
-                                                   putStrLn "File Saved"
-                                                   game (Sudoku a) moves undoneMoves
+                                          if checkBlankSudoku (Sudoku a) then
+                                             do putStrLn "The board is empty hence you cannot save it!"
+                                                putStrLn "You must load a board from file first."
+                                                game (Sudoku a) moves undoneMoves
+                                          else
+                                             do putStr "Enter file to save to: "
+                                                fileName <- getLine
+                                                writeFile fileName (constructFile (Sudoku a))
+                                                putStrLn "File Saved"
+                                                game (Sudoku a) moves undoneMoves
                                        else if (option == '3') then 
-                                             do 
+                                          do 
                                              return ()
                                        else if (option == '4') then
-                                             if checkBlankSudoku (Sudoku a) then 
-                                                do putStrLn "The board is empty hence you cannot save it!"
-                                                   putStrLn "You must load a board from file first."
+                                          if checkBlankSudoku (Sudoku a) then 
+                                             do putStrLn "The board is empty hence you cannot make a move!"
+                                                putStrLn "You must load a board from file first."
+                                                game (Sudoku a) moves undoneMoves
+                                          else 
+                                             do putStrLn "Next move:"
+                                                row <- getRowCol "Row:"
+                                                col <- getRowCol "Column:"
+                                                number <- getDigit "Number:"
+                                                if (checkMove (Sudoku a) row col number) then 
+                                                   do 
+                                                      let board = makeMove (Sudoku a) row col number
+                                                      let newmoves =  (row,col,number):moves
+                                                      putStrLn "New board:"
+                                                      printSudoku board (-1)
+                                                      if checkSudokuOver board then
+                                                         putStrLn "Congratulations you won the game!"
+                                                      else
+                                                         do game board newmoves undoneMoves
+                                                else
+                                                   do putStrLn "Sorry, there is a conflict existing in your board."
+                                                      putStrLn "Your current board:"
+                                                      printSudoku (Sudoku a) (-1)
+                                                      game (Sudoku a) moves undoneMoves
+                                       else if (option == '5') then
+                                          if (checkBlankSudoku (Sudoku a)) then
+                                             do putStrLn "The board is empty hence you cannot undo a move!"
+                                                putStrLn "You must load a board from file first."
+                                                game (Sudoku a) moves undoneMoves
+                                          else
+                                             if moves == [] then
+                                                do putStrLn "You have not made any moves to undo"
+                                                   printSudoku (Sudoku a) (-1)
                                                    game (Sudoku a) moves undoneMoves
                                              else 
-                                                do putStrLn "Next move:"
-                                                   row <- getRowCol "Row:"
-                                                   col <- getRowCol "Column:"
-                                                   number <- getDigit "Number:"
-                                                   if (checkMove (Sudoku a) row col number) then 
-                                                      do 
-                                                         let board = makeMove (Sudoku a) row col number 
-                                                         putStrLn "New board:"
-                                                         printSudoku board (-1)
-                                                         if checkSudokuOver board then
-                                                            putStrLn "Congratulations you won the game!"
-                                                         else
-                                                            do game board moves undoneMoves
-                                                   else
-                                                      do putStrLn "Sorry, there is a conflict existing in your board."
-                                                         putStrLn "Your current board:"
-                                                         printSudoku (Sudoku a) (-1)
-                                                         game (Sudoku a) moves undoneMoves
+                                                do
+                                                   let lastMove = head moves
+                                                   let (row, col, number) = lastMove
+                                                   let newMoves = drop 1 moves
+                                                   let newUndoneMoves = lastMove : undoneMoves
+                                                   let board = undoMove (Sudoku a) row col
+                                                   putStrLn "Move has been undone!"
+                                                   printSudoku board (-1)
+                                                   game board newMoves newUndoneMoves
+                                       else if (option == '6') then 
+                                          if (checkBlankSudoku (Sudoku a)) then
+                                             do putStrLn "The board is empty hence you cannot redo a move!"
+                                                putStrLn "You must load a board from file first."
+                                                game (Sudoku a) moves undoneMoves
+                                          else
+                                             if undoneMoves == [] then
+                                                do putStrLn "You have not undone any moves to redo"
+                                                   printSudoku (Sudoku a) (-1)
+                                                   game (Sudoku a) moves undoneMoves
+                                             else 
+                                                do
+                                                   let lastUndoneMove = head undoneMoves
+                                                   let (row, col, number) = lastUndoneMove
+                                                   let newUndoneMoves = drop 1 undoneMoves
+                                                   let newMoves = lastUndoneMove : moves
+                                                   let board = makeMove (Sudoku a) row col number
+                                                   putStrLn "Move has been redone!"
+                                                   printSudoku board (-1)
+                                                   game board newMoves newUndoneMoves 
                                        else
                                              do putStrLn "Please enter a valid option!"
                                                 game (Sudoku a) moves undoneMoves
 
 main :: IO ()
 main = game allBlankSudoku [] []
-
-        
-
-
-
-
-
-
