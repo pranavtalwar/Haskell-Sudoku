@@ -186,7 +186,7 @@ getDigit message = do putStrLn message
                            getDigit message
 
 constructFile :: Sudoku -> String
-constructFile (Sudoku a) = unlines (positions ++ values)
+constructFile (Sudoku a) = reverse $ drop 1 $ reverse $ unlines (positions ++ values)
                 where positions = [[intToDigit position | (value, position) <- row] | row <- a]
                       values = [[if (value == Nothing) then '.' else (intToDigit $ fromJust value)| (value, position) <- row] | row <- a]
 
@@ -209,32 +209,49 @@ game (Sudoku a)= do
                           printSudoku board (-1)
                           game board
                    else if (option == '2') then
-                        do putStr "Enter file to save to: "
-                           fileName <- getLine
-                           writeFile fileName (constructFile (Sudoku a))
-                           game (Sudoku a)
+                        if checkBlankSudoku (Sudoku a) then
+                           do putStrLn "The board is empty hence you cannot save it!"
+                              putStrLn "You must load a board from file first."
+                              game (Sudoku a)
+                        else
+                           do putStr "Enter file to save to: "
+                              fileName <- getLine
+                              writeFile fileName (constructFile (Sudoku a))
+                              putStrLn "File Saved"
+                              game (Sudoku a)
                    else if (option == '3') then 
                         do 
                           return ()
                    else if (option == '4') then
-                        do putStrLn "Next move:"
-                           row <- getRowCol "Row:"
-                           col <- getRowCol "Column:"
-                           number <- getDigit "Number:"
-                           if (checkMove (Sudoku a) row col number) then 
-                              do 
-                                 let board = makeMove (Sudoku a) row col number 
-                                 putStrLn "New board:"
-                                 printSudoku board (-1)
-                                 game board
-                           else
-                              do putStrLn "Sorry, there is a conflict existing in your board."
-                                 putStrLn "Your current board:"
-                                 printSudoku (Sudoku a) (-1)
-                                 game (Sudoku a)
+                        if checkBlankSudoku (Sudoku a) then 
+                           do putStrLn "The board is empty hence you cannot save it!"
+                              putStrLn "You must load a board from file first."
+                              game (Sudoku a)
+                        else 
+                           do putStrLn "Next move:"
+                              row <- getRowCol "Row:"
+                              col <- getRowCol "Column:"
+                              number <- getDigit "Number:"
+                              if (checkMove (Sudoku a) row col number) then 
+                                 do 
+                                    let board = makeMove (Sudoku a) row col number 
+                                    putStrLn "New board:"
+                                    printSudoku board (-1)
+                                    if checkSudokuOver board then
+                                       putStrLn "Congratulations you won the game!"
+                                    else
+                                       do game board
+                              else
+                                 do putStrLn "Sorry, there is a conflict existing in your board."
+                                    putStrLn "Your current board:"
+                                    printSudoku (Sudoku a) (-1)
+                                    game (Sudoku a)
                    else
                         do putStrLn "Please enter a valid option!"
                            game (Sudoku a)
+
+main :: IO ()
+main = game allBlankSudoku
 
         
 
