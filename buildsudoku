@@ -1,0 +1,5 @@
+#!/bin/bash
+rm -f Sudoku
+rm -f Sudoku.o
+rm -f Sudoku.hi
+ghc Sudoku.hs
