@@ -1,5 +1,6 @@
 import Data.Maybe
 import Data.Char
+import Data.List
 import System.Directory
 import System.IO
 
@@ -23,6 +24,15 @@ checkBlankSudoku (Sudoku a) = and [and [if (value == Nothing) then True else Fal
 
 constructSudoku :: [String] -> [String] -> Sudoku
 constructSudoku positions values = Sudoku [[(if (values !! rowNo !! colNo == '.') then Nothing else Just (digitToInt (values !! rowNo !! colNo)), (digitToInt char)) | (char, colNo) <- zip row [0..length row - 1]] | (row, rowNo) <- zip positions [0..length positions - 1]]
+
+checkPositions :: [String] -> Bool
+checkPositions positions = and [and [isDigit position && digitToInt position >=0 && digitToInt position < 9 | position <- line] | line <- positions] && and [length digitgroup ==9 | digitgroup <- group $ sort $ concat positions]
+
+checkValues :: [String] -> Bool
+checkValues values = and [and [value == '.' || (isDigit value && digitToInt value >=1 && digitToInt value <= 9) | value <- row] | row <- values]
+
+checkFile :: [String] -> Bool
+checkFile fileContents = ((length fileContents) == 18) && (and [length line == 9 | line <- fileContents]) && (checkPositions %$ take 9 fileContents)  && (checkValues $ drop 9 fileContents)
 
 checkSudokuOver :: Sudoku -> Bool
 checkSudokuOver (Sudoku a) = and [and [(if value == Nothing then False else True) | (value, position) <- row ] | row <- a]
