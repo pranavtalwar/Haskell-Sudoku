@@ -5,9 +5,6 @@ import System.IO
 
 data Sudoku = Sudoku [[(Maybe Int, Int)]] deriving (Show)
 
-lengthSudoku :: Sudoku -> Int
-lengthSudoku (Sudoku a) = length a
-
 getSudokuRows :: Sudoku -> [[(Maybe Int, Int)]]
 getSudokuRows (Sudoku a) = a
 
