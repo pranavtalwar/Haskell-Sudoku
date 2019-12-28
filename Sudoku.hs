@@ -32,7 +32,7 @@ checkValues :: [String] -> Bool
 checkValues values = and [and [value == '.' || (isDigit value && digitToInt value >=1 && digitToInt value <= 9) | value <- row] | row <- values]
 
 checkFile :: [String] -> Bool
-checkFile fileContents = ((length fileContents) == 18) && (and [length line == 9 | line <- fileContents]) && (checkPositions %$ take 9 fileContents)  && (checkValues $ drop 9 fileContents)
+checkFile fileContents = ((length fileContents) == 18) && (and [length line == 9 | line <- fileContents]) && (checkPositions $ take 9 fileContents)  && (checkValues $ drop 9 fileContents)
 
 checkSudokuOver :: Sudoku -> Bool
 checkSudokuOver (Sudoku a) = and [and [(if value == Nothing then False else True) | (value, position) <- row ] | row <- a]
@@ -132,6 +132,10 @@ printMiddleLine (a:b:xs) (c:d:ys) e =  do
 changeLine :: IO ()
 changeLine = putStr "\n"
 
+emptyBoardError :: String -> IO ()
+emptyBoardError message = do putStrLn message
+                             putStrLn "You must load a board from file first."
+
 printSudoku :: Sudoku -> Int -> IO ()
 printSudoku (Sudoku (x:[])) _ = do
                                   printLine (x) (-1)
@@ -162,11 +166,47 @@ getFile = do putStr "Enter the file name: "
              fileChecker <- doesFileExist fileName
              if (fileChecker == True) then
                 do fileContents <- readFile fileName
-                   return fileContents
+                   let newFileContents = lines fileContents
+                   if (checkFile newFileContents == True) then 
+                     do return fileContents
+                   else 
+                     do putStrLn "Invalid input! The file contents are not valid"
+                        getFile
              else 
                 do putStrLn "Invalid input! The file does not exist in this directory"
                    getFile
 
+intersection:: (Eq a) => [[a]] -> [a]
+intersection = foldr1 intersect
+
+possibleNumbers :: Sudoku -> Int -> Int -> [Int]
+possibleNumbers (Sudoku a) row column = if (fst $ a !! row !! column) == Nothing then [1..9] \\ (nub $ concat [rownums, colnums, jigsawnums]) else [fromJust $ fst $ a!! row !! column]
+   where rownums = [fromJust value | (value, position)<- a !! row, isJust value] 
+         colnums =  [fromJust (fst ((row !! column))) | row <- a, isJust (fst (row !! column))]
+         piecenumber = snd (a !! row !! column)
+         jigsawnums = concat [[fromJust value | (value,position) <- row, position == piecenumber && isJust value]| row <- a]
+  
+nextElement :: Sudoku -> Int -> Int -> (Int, Int)               
+nextElement (Sudoku a) 8 8 = (8,8)
+nextElement (Sudoku a) row 8 = nextElement (Sudoku a) (row+1) 0
+nextElement (Sudoku a) row column 
+               | fst (a !! row !! (column + 1)) == Nothing = (row, column + 1)
+               | otherwise = nextElement (Sudoku a) (row) (column+1)
+
+solver:: Sudoku -> Sudoku
+solver board =  solve board 0 0 (possibleNumbers board 0 0)
+
+solve :: Sudoku -> Int -> Int -> [Int] -> Sudoku
+solve board 8 8 [] = allBlankSudoku
+solve board 8 8 (x:[]) = makeMove board 8 8 x
+solve board 8 8 (x:_) = allBlankSudoku
+solve board _ _ [] = allBlankSudoku
+solve board row column (x:xs)
+   | (checkBlankSudoku newboard) == True = solve board row column xs
+   | otherwise = newboard
+   where solveNext sud nrow ncolumn = solve sud (fst(nextElement sud nrow ncolumn)) (snd(nextElement sud nrow ncolumn)) (possibleNumbers sud (fst(nextElement sud nrow ncolumn)) (snd(nextElement sud nrow ncolumn)))
+         newboard = solveNext (makeMove board row column x) row column
+               
 getRowCol :: String -> IO Int
 getRowCol message = do putStrLn message
                        x <- getChar
@@ -204,6 +244,12 @@ constructFile (Sudoku a) = reverse $ drop 1 $ reverse $ unlines (positions ++ va
                 where positions = [[intToDigit position | (value, position) <- row] | row <- a]
                       values = [[if (value == Nothing) then '.' else (intToDigit $ fromJust value)| (value, position) <- row] | row <- a]
 
+firstEmpty :: Sudoku -> Int -> Int -> (Int, Int)
+firstEmpty (Sudoku a) row 9 = firstEmpty (Sudoku a) (row + 1) 0
+firstEmpty (Sudoku a) row column
+   | (fst $ a !! row !! column) == Nothing = (row, column)
+   | otherwise = firstEmpty (Sudoku a) row (column + 1)
+
 game :: Sudoku -> [(Int, Int, Int)] -> [(Int, Int, Int)] -> IO ()
 game (Sudoku a) moves undoneMoves = do
                                        hSetBuffering stdin NoBuffering
@@ -214,6 +260,9 @@ game (Sudoku a) moves undoneMoves = do
                                        putStrLn "4. Make a move"
                                        putStrLn "5. Undo a move"
                                        putStrLn "6. Redo a move"
+                                       putStrLn "7. Solve board"
+                                       putStrLn "8. Hint"
+                                       putStrLn "9. Display Board"
                                        putStr "Enter your choice: "
                                        hFlush stdout
                                        option <- getChar
@@ -243,8 +292,7 @@ game (Sudoku a) moves undoneMoves = do
                                              return ()
                                        else if (option == '4') then
                                           if checkBlankSudoku (Sudoku a) then 
-                                             do putStrLn "The board is empty hence you cannot make a move!"
-                                                putStrLn "You must load a board from file first."
+                                             do emptyBoardError "The board is empty hence you cannot make a move!"
                                                 game (Sudoku a) moves undoneMoves
                                           else 
                                              do putStrLn "Next move:"
@@ -268,8 +316,7 @@ game (Sudoku a) moves undoneMoves = do
                                                       game (Sudoku a) moves undoneMoves
                                        else if (option == '5') then
                                           if (checkBlankSudoku (Sudoku a)) then
-                                             do putStrLn "The board is empty hence you cannot undo a move!"
-                                                putStrLn "You must load a board from file first."
+                                             do emptyBoardError "The board is empty hence you cannot undo a move!"
                                                 game (Sudoku a) moves undoneMoves
                                           else
                                              if moves == [] then
@@ -288,8 +335,7 @@ game (Sudoku a) moves undoneMoves = do
                                                    game board newMoves newUndoneMoves
                                        else if (option == '6') then 
                                           if (checkBlankSudoku (Sudoku a)) then
-                                             do putStrLn "The board is empty hence you cannot redo a move!"
-                                                putStrLn "You must load a board from file first."
+                                             do emptyBoardError "The board is empty hence you cannot redo a move!"
                                                 game (Sudoku a) moves undoneMoves
                                           else
                                              if undoneMoves == [] then
@@ -305,7 +351,43 @@ game (Sudoku a) moves undoneMoves = do
                                                    let board = makeMove (Sudoku a) row col number
                                                    putStrLn "Move has been redone!"
                                                    printSudoku board (-1)
-                                                   game board newMoves newUndoneMoves 
+                                                   game board newMoves newUndoneMoves
+                                       else if (option == '7') then
+                                          if (checkBlankSudoku (Sudoku a)) then
+                                             do emptyBoardError "The board is empty hence it cannot be solved"
+                                                game (Sudoku a) moves undoneMoves
+                                          else
+                                             do 
+                                                let solvedboard = solver (Sudoku a)
+                                                if ((checkBlankSudoku solvedboard) == False) then
+                                                   do
+                                                      printSudoku solvedboard (-1)
+                                                      putStrLn "This is the solution!"
+                                                else
+                                                   do putStrLn "No solution for this board"
+                                       else if (option == '8') then 
+                                          if (checkBlankSudoku (Sudoku a)) then
+                                             do emptyBoardError "The board is empty hence hint cannot be given"
+                                                game (Sudoku a) moves undoneMoves
+                                          else 
+                                             do let solvedboard = solver (Sudoku a)
+                                                if ((checkBlankSudoku solvedboard) == False) then
+                                                   do 
+                                                      let (hintr, hintc) = firstEmpty (Sudoku a) 0 0 
+                                                      let hintNum = fromJust $ fst $ (getSudokuRows solvedboard) !! hintr !! hintc
+                                                      putStrLn ("You can put " ++ show hintNum ++ " on row number: " ++ show hintr ++ " and column number: " ++ show hintc)
+                                                      game (Sudoku a) moves undoneMoves
+                                                else 
+                                                   do putStrLn "No possible hint for this situation"
+                                                      game (Sudoku a) moves undoneMoves
+                                       else if (option == '9') then
+                                          if (checkBlankSudoku (Sudoku a)) then
+                                             do emptyBoardError "The board is empty hence cannot be displayed"
+                                                game (Sudoku a) moves undoneMoves
+                                          else
+                                             do putStrLn "The current board is:"
+                                                printSudoku (Sudoku a) (-1)
+                                                game (Sudoku a) moves undoneMoves
                                        else
                                              do putStrLn "Please enter a valid option!"
                                                 game (Sudoku a) moves undoneMoves
