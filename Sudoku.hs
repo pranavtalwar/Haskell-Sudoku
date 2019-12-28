@@ -253,7 +253,7 @@ game (Sudoku a) moves undoneMoves = do
                                                       if checkSudokuOver board then
                                                          putStrLn "Congratulations you won the game!"
                                                       else
-                                                         do game board newmoves undoneMoves
+                                                         do game board newmoves []
                                                 else
                                                    do putStrLn "Sorry, there is a conflict existing in your board."
                                                       putStrLn "Your current board:"
