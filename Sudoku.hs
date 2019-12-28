@@ -226,9 +226,10 @@ game (Sudoku a) moves undoneMoves = do
                                                 game (Sudoku a) moves undoneMoves
                                           else
                                              do putStr "Enter file to save to: "
-                                                fileName <- getLine
+                                                hFlush stdout
+                                                fileName <- getLine  
                                                 writeFile fileName (constructFile (Sudoku a))
-                                                putStrLn "File Saved"
+                                                putStrLn "File Saved!"
                                                 game (Sudoku a) moves undoneMoves
                                        else if (option == '3') then 
                                           do 
