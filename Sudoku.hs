@@ -100,7 +100,7 @@ possibleNumbers (Sudoku a) row column = if (isNothing $ fst $ a !! row !! column
 -- Finds the next element that must be filled up given the coordinates
 nextElement :: Sudoku -> Int -> Int -> (Int, Int)               
 nextElement (Sudoku a) 8 8 = (8,8)
-nextElement (Sudoku a) row 8 = nextElement (Sudoku a) (row+1) 0
+nextElement (Sudoku a) row 8 = if isNothing $ fst $ a !! (row +1)!! 0 then (row + 1, 0) else nextElement (Sudoku a) (row+1) 0
 nextElement (Sudoku a) row column 
    | isNothing $ fst $ a !! row !! (column + 1) = (row, column + 1)
    | otherwise = nextElement (Sudoku a) (row) (column+1)
@@ -109,11 +109,15 @@ nextElement (Sudoku a) row column
 solve :: Sudoku -> Int -> Int -> [Int] -> Sudoku
 solve board 8 8 [] = allBlankSudoku
 solve board 8 8 (x:[]) = makeMove board 8 8 x
+solve board 8 8 (x:_) = allBlankSudoku
+solve board _ _ [] = allBlankSudoku
 solve board row column (x:xs)
    | (checkBlankSudoku newboard) = solve board row column xs
    | otherwise = newboard
-   where solveNext sud nrow ncolumn = solve sud (fst(nextElement sud nrow ncolumn)) (snd(nextElement sud nrow ncolumn)) (possibleNumbers sud (fst(nextElement sud nrow ncolumn)) (snd(nextElement sud nrow ncolumn)))
-         newboard = solveNext (makeMove board row column x) row column
+   where newboard = solveNext (makeMove board row column x) row column
+
+solveNext :: Sudoku -> Int -> Int -> Sudoku
+solveNext sud nrow ncolumn = solve sud (fst(nextElement sud nrow ncolumn)) (snd(nextElement sud nrow ncolumn)) (possibleNumbers sud (fst(nextElement sud nrow ncolumn)) (snd(nextElement sud nrow ncolumn)))
 
 -- Solves a JigSaw Sudoku board if possible         
 solver:: Sudoku -> Sudoku
