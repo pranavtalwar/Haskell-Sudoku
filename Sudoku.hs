@@ -402,6 +402,7 @@ game (Sudoku a) moves undoneMoves = do
                                                       putStrLn "This is the solution!"
                                                 else
                                                    do putStrLn "No solution for this board"
+                                                      game (Sudoku a) moves undoneMoves
                                        else if (option == '8') then 
                                           if (checkBlankSudoku (Sudoku a)) then
                                              do emptyBoardError "The board is empty hence hint cannot be given"
