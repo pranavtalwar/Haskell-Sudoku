@@ -116,6 +116,7 @@ solve board row column (x:xs)
    | otherwise = newboard
    where newboard = solveNext (makeMove board row column x) row column
 
+-- Helper function for solving, returns a new board
 solveNext :: Sudoku -> Int -> Int -> Sudoku
 solveNext sud nrow ncolumn = solve sud (fst(nextElement sud nrow ncolumn)) (snd(nextElement sud nrow ncolumn)) (possibleNumbers sud (fst(nextElement sud nrow ncolumn)) (snd(nextElement sud nrow ncolumn)))
 
